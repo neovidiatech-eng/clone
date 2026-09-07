@@ -1,0 +1,132 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: clone_postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5446}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - clone_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - clone_network
+    deploy:  
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G 
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: clone_pgadmin
+    restart: unless-stopped
+    ports:
+      - "${PGADMIN_PORT:-5030}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    volumes:
+      - clone_pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - clone_network
+    deploy:  
+      resources:
+
+        limits:
+          cpus: '0.5'
+          memory: 500M 
+
+  redis:
+    image: redis:7-alpine
+    container_name: clone_redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6350}:6379"
+    volumes:
+      - clone_redis_data:/data
+    networks:
+      - clone_network
+    deploy:  
+      resources:
+
+        limits:
+          cpus: '0.5'
+          memory: 500M 
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clone_app
+    restart: unless-stopped
+    volumes:
+      - clone_images:/app/uploads
+    ports:
+      - "${APP_PORT:-4010}:${PORT:-4010}"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      ENCRYPT_KEY: ${ENCRYPT_KEY}
+      SALT: ${SALT}
+      JWT_SECRET_ACCESS_ADMIN: ${JWT_SECRET_ACCESS_ADMIN}
+      JWT_SECRET_REFRESH_ADMIN: ${JWT_SECRET_REFRESH_ADMIN}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USER: ${MAIL_USER}
+      MAIL_PASS: ${MAIL_PASS}
+      MAIL_FROM: ${MAIL_FROM}
+      APP_EMAIL: ${APP_EMAIL}
+      FIREBASE_TYPE: ${FIREBASE_TYPE}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      FIREBASE_PRIVATE_KEY_ID: ${FIREBASE_PRIVATE_KEY_ID}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY}
+      FIREBASE_CLIENT_ID: ${FIREBASE_CLIENT_ID}
+      FIREBASE_AUTH_URI: ${FIREBASE_AUTH_URI}
+      FIREBASE_TOKEN_URI: ${FIREBASE_TOKEN_URI}
+      FIREBASE_AUTH_PROVIDER_X509_CERT_URL: ${FIREBASE_AUTH_PROVIDER_X509_CERT_URL}
+      FIREBASE_CLIENT_X509_CERT_URL: ${FIREBASE_CLIENT_X509_CERT_URL}
+      FIREBASE_UNIVERSE_DOMAIN: ${FIREBASE_UNIVERSE_DOMAIN}
+      APP_PASSWORD: ${APP_PASSWORD}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      FRONTEND_URL: ${FRONTEND_URL}
+      PORT: ${PORT:-4010}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      BREVO_API_KEY: ${BREVO_API_KEY}
+      SENDER_NAME: ${SENDER_NAME}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - clone_network
+    deploy:  
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G 
+
+networks:
+  clone_network:
+    driver: bridge
+
+volumes:
+  clone_pgdata:
+  clone_pgadmin_data:
+  clone_redis_data:
+  clone_images:

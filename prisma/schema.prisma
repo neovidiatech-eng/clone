@@ -1,0 +1,704 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model user {
+  id                            String                  @id @default(uuid())
+  email                         String                  @unique
+  password                      String?
+  name                          String?
+  phone                         String?
+  createdAt                     DateTime                @default(now())
+  updatedAt                     DateTime                @updatedAt
+  confirmAt                     DateTime?
+  roleId                        String?
+  code_country                  String?
+  status                        String                  @default("pending")
+  googleId                      String?                 @unique
+  provider                      String                  @default("local")
+  timezone                      String?                 @default("Africa/Cairo")
+  country                       String?
+  nationality                   String?
+  fcmToken                      String?                 @default("")
+  age                           Int?                    @default(0)
+  city                          String?                 @default("unknown")
+  additionalData                Json?                   @map("additional_data")
+  conversationsStudent          Conversation[]          @relation("StudentConversations")
+  conversations                 Conversation[]          @relation("TeacherConversations")
+  messages                      Message[]
+  parentStudents                ParentStudent[]         @relation("ParentRelation")
+  reviewsReceived               Review[]                @relation("ReviewsReceived")
+  reviewsGiven                  Review[]                @relation("ReviewsGiven")
+  subscriptions                 Subscription[]
+  wallet                        Wallet[]
+  withdrawalRequests            WithdrawalRequest[]
+  authLogs                      auth_log[]
+  sessionRequests               session_request[]
+  student                       student?
+  stuff                         stuff?
+  subscriptionRequests          subscription_requests[]
+  teacher                       teacher?
+  supervisorViolations          TeacherViolation[]      @relation("SupervisorViolations")
+  role                          role?                   @relation(fields: [roleId], references: [id])
+  moderator                     moderator?
+  supervisorModeratorViolations moderatorViolation[]    @relation("ModeratorViolations")
+  moderatorViolations           moderatorViolation[]
+
+  @@index([email])
+  @@index([googleId])
+}
+
+model role {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions rolePermission[]
+  stuff           stuff[]
+  teachers        teacher[]
+  users           user[]
+}
+
+model permission {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  code            String?          @unique
+  method          String           @default("")
+  resource        String           @default("")
+  rolePermissions rolePermission[]
+
+  @@index([name])
+  @@index([code])
+  @@index([resource])
+  @@index([method])
+}
+
+model rolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  permission   permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+model currency {
+  id                 String              @id @default(uuid())
+  name_en            String
+  name_ar            String
+  symbol             String
+  code               String              @unique
+  default            Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  exchangeRate       Float
+  Plans              Plans[]
+  subscriptions      Subscription[]
+  wallets            Wallet[]
+  withdrawalRequests WithdrawalRequest[]
+  expenses           expenses[]
+  teachers           teacher[]
+
+  @@index([name_en])
+  @@index([name_ar])
+  @@index([code])
+}
+
+model Plans {
+  id                   String                  @id @default(uuid())
+  name_en              String                  @unique
+  name_ar              String                  @unique
+  description          String
+  price                String
+  duration             Int
+  features             String[]
+  currencyId           String?
+  color                String?                 @default("#369589")
+  isGroup              Boolean                 @default(false)
+  maxStudents          String                  @default("1")
+  planType             String                  @default("individual")
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  active               Boolean                 @default(false)
+  bestSeller           Boolean                 @default(false)
+  sessionsCount        Float                   @default(0)
+  sessionTime          Float                   @default(0)
+  currency             currency?               @relation(fields: [currencyId], references: [id])
+  subscriptions        Subscription[]
+  students             student[]
+  subscriptionRequests subscription_requests[]
+
+  @@index([name_en])
+  @@index([name_ar])
+}
+
+model subjects {
+  id              String            @id @default(uuid())
+  name_en         String            @unique
+  name_ar         String            @unique
+  active          Boolean           @default(false)
+  color           String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  courses         course[]
+  exams           exam[]
+  homeworks       homework[]
+  schedules       schedule[]
+  teacherSubjects teacher_subject[]
+
+  @@index([name_en])
+  @@index([name_ar])
+}
+
+model subscription_requests {
+  id        String   @id @default(uuid())
+  planId    String?
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user_id   String
+  plan      Plans?   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user      user     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([planId])
+}
+
+model stuff {
+  id        String   @id @default(uuid())
+  user_id   String   @unique
+  roleId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  role      role?    @relation(fields: [roleId], references: [id])
+  user      user     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model teacher {
+  id                    String                 @id @default(uuid())
+  user_id               String                 @unique
+  currencyId            String?
+  hour_price            Float?                 @default(0)
+  group_hour_price      Float?                 @default(0)
+  gender                String
+  active                Boolean                @default(false)
+  roleId                String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  avgRating             Float                  @default(0)
+  totalReviews          Int                    @default(0)
+  meeting_link          String?
+  approved              Boolean                @default(false)
+  conversations         Conversation[]
+  exams                 exam[]
+  homeworks             homework[]
+  schedules             schedule[]
+  studentTeachers       student_teacher[]
+  currency              currency?              @relation(fields: [currencyId], references: [id])
+  role                  role?                  @relation(fields: [roleId], references: [id])
+  user                  user                   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  teacherSubjects       teacher_subject[]
+  violations            TeacherViolation[]
+  students              student[]              @relation("TeacherStudentRelation")
+  dailyQuranRecitations DailyQuranRecitation[]
+}
+
+model teacher_subject {
+  id        String   @id @default(uuid())
+  teacherId String
+  subjectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  subject   subjects @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher   teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, subjectId])
+  @@index([teacherId])
+  @@index([subjectId])
+}
+
+model student {
+  id                    String                 @id @default(uuid())
+  user_id               String                 @unique
+  birth_date            DateTime
+  gender                String
+  active                Boolean                @default(false)
+  planId                String?
+  country               String
+  status                String                 @default("pending")
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  sessions              Float                  @default(0)
+  sessions_attended     Float                  @default(0)
+  sessions_remaining    Float                  @default(0)
+  points                Int                    @default(0)
+  avgRating             Float                  @default(0)
+  totalReviews          Int                    @default(0)
+  paid                  String?                @default("pending")
+  conversations         Conversation[]
+  parents               ParentStudent[]        @relation("StudentParentRelation")
+  exams                 exam[]
+  homeworks             homework[]
+  schedules             schedule[]
+  plan                  Plans?                 @relation(fields: [planId], references: [id])
+  rankId                String?
+  rank                  Rank?                  @relation(fields: [rankId], references: [id])
+  user                  user                   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  studentTeachers       student_teacher[]
+  teachers              teacher[]              @relation("TeacherStudentRelation")
+  groupSchedules        GroupScheduleStudent[]
+  dailyQuranRecitations DailyQuranRecitation[]
+  studentModerators     student_moderator[]
+}
+
+model student_teacher {
+  id         String   @id @default(uuid())
+  studentId  String
+  teacherId  String
+  hour_price Float?   @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  student    student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher    teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, teacherId])
+  @@index([studentId])
+  @@index([teacherId])
+}
+
+model schedule {
+  id                  String                 @id @default(uuid())
+  teacherId           String
+  studentId           String?
+  status              String                 @default("scheduled")
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  notes               String?
+  description         String?
+  link                String
+  title               String?
+  end_time            DateTime
+  start_time          DateTime
+  day_of_week         String?
+  is_recurring        Boolean                @default(false)
+  isGroup             Boolean                @default(false)
+  maxStudents         String                 @default("1")
+  parent_recurring_id String?
+  subjectId           String                 @default("null")
+  rescheduledFromId   String?                @unique
+  rescheduledToId     String?                @unique
+  reviews             Review[]
+  scheduleLogs        ScheduleLog?
+  rescheduledTo       schedule?              @relation("RescheduleHistory", fields: [rescheduledToId], references: [id])
+  rescheduledFrom     schedule?              @relation("RescheduleHistory")
+  student             student?               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject             subjects               @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher             teacher                @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  requests            session_request[]
+  violations          TeacherViolation[]
+  groupStudents       GroupScheduleStudent[]
+
+  @@index([teacherId])
+  @@index([studentId])
+  @@index([start_time])
+  @@index([end_time])
+  @@index([status])
+}
+
+model GroupScheduleStudent {
+  id         String   @id @default(uuid())
+  scheduleId String
+  studentId  String
+  createdAt  DateTime @default(now())
+  schedule   schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  student    student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleId, studentId])
+  @@index([scheduleId])
+  @@index([studentId])
+}
+
+model session_request {
+  id            String    @id @default(uuid())
+  sessionId     String?
+  requesterId   String
+  requesterRole String
+  type          String
+  status        String    @default("pending")
+  reason        String?
+  requestedData Json?
+  adminId       String?
+  adminNotes    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  requester     user      @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  schedule      schedule? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model audit_log {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  action     String
+  userId     String
+  changes    Json?
+  createdAt  DateTime @default(now())
+}
+
+model notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  type      String
+  createdAt DateTime @default(now())
+}
+
+model expenses {
+  id           String        @id @default(uuid())
+  title        String
+  currencyId   String?
+  amount       Float
+  payment_type String
+  type         String
+  status       String
+  date         DateTime
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  currency     currency?     @relation(fields: [currencyId], references: [id])
+}
+
+model homework {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  status      String   @default("pending")
+  dueDate     DateTime
+  studentId   String
+  teacherId   String
+  subjectId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  student     student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject     subjects @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher     teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId])
+  @@index([studentId])
+  @@index([subjectId])
+}
+
+model exam {
+  id         String   @id @default(uuid())
+  title      String
+  grade      Float    @default(0)
+  studentId  String
+  subjectId  String
+  teacherId  String
+  dueDate    DateTime
+  totalMarks Float    @default(100)
+  duration   Float
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  student    student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject    subjects @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher    teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id           String        @id @default(uuid())
+  userId       String
+  planId       String
+  status       String        @default("active")
+  amount       Float
+  startDate    DateTime      @default(now())
+  paidAt       DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  currencyId   String
+  currency     currency      @relation(fields: [currencyId], references: [id], onDelete: Cascade)
+  plan         Plans         @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user         user          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+}
+
+model Wallet {
+  id           String        @id @default(uuid())
+  type         String
+  ownerId      String?
+  balance      Float         @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  currencyId   String?
+  userId       String?
+  transactions Transaction[]
+  currency     currency?     @relation(fields: [currencyId], references: [id])
+  user         user?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WithdrawalRequest {
+  id           String        @id @default(uuid())
+  teacherId    String
+  amount       Float
+  status       String        @default("pending")
+  adminNotes   String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  currencyId   String?
+  transactions Transaction[]
+  currency     currency?     @relation(fields: [currencyId], references: [id], onDelete: Cascade)
+  teacher      user          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId])
+  @@index([status])
+}
+
+model Transaction {
+  id                  String             @id @default(uuid())
+  walletId            String
+  type                String
+  amount              Float
+  status              String             @default("completed")
+  reason              Json?
+  createdAt           DateTime           @default(now())
+  expenseId           String?
+  subscriptionId      String?
+  withdrawalRequestId String?
+  expense             expenses?          @relation(fields: [expenseId], references: [id], onDelete: SetNull)
+  subscription        Subscription?      @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  wallet              Wallet             @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  withdrawalRequest   WithdrawalRequest? @relation(fields: [withdrawalRequestId], references: [id], onDelete: SetNull)
+}
+
+model ScheduleLog {
+  id                 String    @id @default(uuid())
+  scheduleId         String    @unique
+  joinTime_student   DateTime?
+  leaveTime_student  DateTime?
+  joinTime_teacher   DateTime?
+  leaveTime_teacher  DateTime?
+  duration_student   Float?
+  duration_teacher   Float?
+  isTeacherLate      Boolean   @default(false)
+  isTeacherCompleted Boolean   @default(false)
+  isStudentAttended  Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  schedule           schedule  @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  scheduleId String
+  reviewerId String
+  revieweeId String
+  rating     Int
+  comment    String?
+  role       String
+  isHidden   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  reviewee   user     @relation("ReviewsReceived", fields: [revieweeId], references: [id], onDelete: Cascade)
+  reviewer   user     @relation("ReviewsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
+  schedule   schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleId, reviewerId])
+}
+
+model Conversation {
+  id            String    @id @default(uuid())
+  teacherId     String
+  studentId     String
+  teacherUserId String?
+  studentUserId String?
+  student       student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  userStudent   user?     @relation("StudentConversations", fields: [studentUserId], references: [id], onDelete: SetNull)
+  teacher       teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  userTeacher   user?     @relation("TeacherConversations", fields: [teacherUserId], references: [id], onDelete: SetNull)
+  messages      Message[]
+
+  @@unique([teacherId, studentId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         user         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+model course {
+  id           String   @id @default(uuid())
+  title        String
+  description  String
+  image        String
+  status       String   @default("active")
+  videoUrl     String?
+  duration     Float?
+  pdfurl       String?
+  subjectId    String
+  attatchments Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  subject      subjects @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+}
+
+model Setting {
+  id               String   @id @default(uuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  paidSessionCount Int?     @default(3) @map("paid_session_count")
+  studentCanJoin   Boolean? @default(false) @map("student_can_join")
+}
+
+model ParentStudent {
+  parentId  String
+  studentId String
+  createdAt DateTime @default(now())
+  parent    user     @relation("ParentRelation", fields: [parentId], references: [id], onDelete: Cascade)
+  student   student  @relation("StudentParentRelation", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([parentId, studentId])
+  @@index([parentId])
+  @@index([studentId])
+}
+
+model auth_log {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String
+  role      String?
+  createdAt DateTime @default(now())
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+}
+
+model InfractionItem {
+  id                     String               @id @default(uuid())
+  title_en               String
+  title_ar               String
+  description            String?
+  defaultType            String               @default("warning")
+  defaultDeductionAmount Float                @default(0)
+  active                 Boolean              @default(true)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  violations             TeacherViolation[]
+  moderatorViolations    moderatorViolation[]
+}
+
+model TeacherViolation {
+  id               String          @id @default(uuid())
+  teacherId        String
+  supervisorId     String
+  scheduleId       String?
+  infractionItemId String?
+  type             String          @default("warning")
+  deductionAmount  Float           @default(0)
+  reason           String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  teacher          teacher         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  supervisor       user            @relation("SupervisorViolations", fields: [supervisorId], references: [id], onDelete: Cascade)
+  schedule         schedule?       @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  infractionItem   InfractionItem? @relation(fields: [infractionItemId], references: [id], onDelete: SetNull)
+
+  @@index([teacherId])
+  @@index([supervisorId])
+  @@index([scheduleId])
+}
+
+model Rank {
+  id             String    @id @default(uuid())
+  name_en        String    @unique
+  name_ar        String    @unique
+  description_en String?
+  description_ar String?
+  color          String?   @default("#369589")
+  icon           String?
+  minSessions    Int       @default(0)
+  minPoints      Int       @default(0)
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  students       student[]
+}
+
+model DailyQuranRecitation {
+  id        String   @id @default(uuid())
+  studentId String
+  teacherId String
+  status    String   @default("pending")
+  startPage Int      @default(1)
+  endPage   Int      @default(1)
+  surah     String
+  dueDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  student   student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher   teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+}
+
+model moderator {
+  id                  String               @id @default(uuid())
+  userId              String               @unique
+  gender              String               @default("male")
+  createdAt           DateTime             @default(now())
+  status              String               @default("active")
+  updatedAt           DateTime             @updatedAt
+  user                user                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentModerators   student_moderator[]
+  moderatorViolations moderatorViolation[]
+}
+
+model student_moderator {
+  id          String    @id @default(uuid())
+  studentId   String
+  moderatorId String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  student     student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  moderator   moderator @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
+}
+
+model moderatorViolation {
+  id               String          @id @default(uuid())
+  moderatorId      String
+  supervisorId     String
+  infractionItemId String?
+  type             String          @default("warning")
+  deductionAmount  Float           @default(0)
+  reason           String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  moderator        moderator       @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
+  supervisor       user            @relation("ModeratorViolations", fields: [supervisorId], references: [id], onDelete: Cascade)
+  infractionItem   InfractionItem? @relation(fields: [infractionItemId], references: [id], onDelete: SetNull)
+  user             user?           @relation(fields: [userId], references: [id])
+  userId           String?
+
+
+  @@index([moderatorId])
+  @@index([supervisorId])
+}
