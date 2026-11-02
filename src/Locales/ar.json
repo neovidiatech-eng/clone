@@ -42,6 +42,7 @@
   "SESSION_REMINDER_EMAIL_SUBJECT": "تذكير بموعد جلسة قريبة",
   "SESSION_REMINDER_EMAIL_TEXT": "يرجى الاستعداد قبل الموعد بدقائق، واستخدام زر الانضمام عند بداية الجلسة.",
   "INTERNAL_SERVER_ERROR": "حدث خطأ داخلي في النظام",
+  "APPLICATION_UNDER_MAINTENANCE": "Error",
   "VALIDATION_ERROR": "فشل التحقق من البيانات",
   "UNAUTHORIZED": "ليس لديك صلاحية للقيام بهذا الإجراء",
   "FORBIDDEN": "ليس لديك صلاحية لتنفيذ هذا الإجراء",

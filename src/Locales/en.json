@@ -26,6 +26,7 @@
   "SESSION_REMINDER_EMAIL_SUBJECT": "Upcoming session reminder",
   "SESSION_REMINDER_EMAIL_TEXT": "Please be ready a few minutes early and use the join button when your session starts.",
   "INTERNAL_SERVER_ERROR": "An internal server error occurred",
+  "APPLICATION_UNDER_MAINTENANCE": "Error",
   "VALIDATION_ERROR": "Validation failed",
   "UNAUTHORIZED": "You are not authorized to perform this action",
   "FORBIDDEN": "You do not have permission to perform this action",

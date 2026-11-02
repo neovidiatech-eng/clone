@@ -1,5 +1,6 @@
 import express, { Router } from "express";
 import path from "node:path";
+import { applicationAvailability } from "./Middlewares/ApplicationAvailability.js";
 
 // Router imports
 import authRouter from "./Modules/Authentication/auth.routes.js";
@@ -31,6 +32,8 @@ import feedbackRouter from "./Modules/feedback/feedback.routes.js";
 import moderatorRouter from "./Modules/moderator/moderator.routes.js";
 
 const rootRouter = Router();
+
+rootRouter.use(applicationAvailability);
 
 // API Routes
 rootRouter.use("/auth", authRouter);

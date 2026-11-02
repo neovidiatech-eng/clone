@@ -1,9 +1,13 @@
 import { verifyToken } from "../Utils/Token/token.js";
 import * as db from "../database/dbService.js"
+import { getApplicationOpen } from "../Utils/ApplicationAvailability.js";
 
 
 export const socketAuthentication = async (socket, next) => {
   try {
+    if (!(await getApplicationOpen())) {
+      return next(new Error("APPLICATION_UNDER_MAINTENANCE"));
+    }
 
     const token = socket.handshake.auth.token;
     if (!token || typeof token !== "string") {

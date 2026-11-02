@@ -7,3 +7,9 @@ export const updateSettings = {
   }).required(),
 };
 
+export const updateApplicationStatus = {
+  body: joi.object({
+    applicationOpen: joi.boolean().strict().required(),
+  }).required(),
+};
+

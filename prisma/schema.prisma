@@ -568,6 +568,7 @@ model Setting {
   updatedAt        DateTime @updatedAt
   paidSessionCount Int?     @default(3) @map("paid_session_count")
   studentCanJoin   Boolean? @default(false) @map("student_can_join")
+  applicationOpen  Boolean  @default(true) @map("application_open")
 }
 
 model ParentStudent {

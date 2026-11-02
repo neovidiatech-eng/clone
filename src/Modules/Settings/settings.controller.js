@@ -1,5 +1,8 @@
 import { asyncHandler, successResponse } from "../../Utils/Response.js";
 import * as db from "../../database/dbService.js";
+import { redis } from "../../Utils/Redis/Connection.js";
+import { APPLICATION_OPEN_CACHE_KEY } from "../../Utils/ApplicationAvailability.js";
+import { getIO } from "../../Utils/Socket/index.js";
 
 /**
  * Reads settings from database
@@ -12,17 +15,20 @@ export const getSettingsData = async () => {
         ...setting,
         paidSessionCount: setting.paidSessionCount ?? 3,
         studentCanJoin: setting.studentCanJoin ?? false,
+        applicationOpen: setting.applicationOpen ?? true,
       };
     }
     return {
       paidSessionCount: 3,
       studentCanJoin: false,
+      applicationOpen: true,
     };
   } catch (error) {
     console.error("Error reading settings from DB:", error);
     return {
       paidSessionCount: 3,
       studentCanJoin: false,
+      applicationOpen: true,
     };
   }
 };
@@ -75,6 +81,31 @@ export const updateSettings = asyncHandler(async (req, res, next) => {
     req,
     status: 200,
     data: updatedSettings,
+    message: "UPDATE_SUCCESS",
+  });
+});
+
+export const updateApplicationStatus = asyncHandler(async (req, res, next) => {
+  const { applicationOpen } = req.body;
+  const setting = await saveSettingsData({ applicationOpen });
+
+  try {
+    await redis.set(APPLICATION_OPEN_CACHE_KEY, String(setting.applicationOpen), {
+      EX: 5,
+    });
+  } catch (error) {
+    console.error("Application availability cache update failed:", error.message);
+  }
+
+  if (!setting.applicationOpen) {
+    getIO()?.disconnectSockets(true);
+  }
+
+  return successResponse({
+    res,
+    req,
+    status: 200,
+    data: { applicationOpen: setting.applicationOpen },
     message: "UPDATE_SUCCESS",
   });
 });
