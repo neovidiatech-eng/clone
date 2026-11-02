@@ -25,8 +25,6 @@ router.patch(
 
 router.patch(
   "/health",
-  authentication(),
-  authorize(PERMISSIONS_V2.SETTINGS.UPDATE),
   validation(settingsValidation.updateApplicationStatus),
   settingController.updateApplicationStatus,
 );
